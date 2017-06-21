@@ -35,7 +35,7 @@ def test():
 @manager.command
 def cov():
     '''run the unittest with coverage'''
-    tests = unittest.TestLoader().discover('plate/test')
+    tests = unittest.TestLoader().discover('plato/test')
     result = unittest.TextTestRunner(verbosity=2).run(tests)
     if result.wasSuccessful():
         COV.stop()
