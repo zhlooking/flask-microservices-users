@@ -1,25 +1,19 @@
 import json
+import datetime
 
 from plato.test.base import BaseTestCase
 from plato.api.models import User
 from plato import db
 
 
-def add_user(username, email):
-    user = User(username=username, email=email)
+def add_user(username, email, created_at=datetime.datetime.now()):
+    user = User(username=username, email=email, created_at=created_at)
     db.session.add(user)
     db.session.commit()
     return user
 
 
 class TestUserService(BaseTestCase):
-    def test_users(self):
-        response = self.client.get('/ping')
-        data = json.loads(response.data.decode())
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('pong!', data['message'])
-        self.assertIn('success', data['status'])
-
     def test_add_user(self):
         '''Ensure a new user can be added to database'''
         with self.client:
@@ -119,8 +113,9 @@ class TestUserService(BaseTestCase):
             self.assertIn('fail', data['status'])
 
     def test_all_users(self):
-        add_user('michael', 'michael@realpython.com')
-        add_user('fletcher', 'fletcher@realpython.com')
+        created_at = datetime.datetime.now() + datetime.timedelta(-30)
+        add_user('michael', 'michael_foo@realpython.com')
+        add_user('fletcher', 'fletcher_foo@realpython.com', created_at)
         with self.client:
             response = self.client.get('/users')
             data = json.loads(response.data.decode())
@@ -130,35 +125,5 @@ class TestUserService(BaseTestCase):
             self.assertTrue('created_at', data['data']['users'][1])
             self.assertIn('michael', data['data']['users'][0]['username'])
             self.assertIn('fletcher', data['data']['users'][1]['username'])
-            self.assertIn('michael@realpython.com', data['data']['users'][0]['email'])
-            self.assertIn('fletcher@realpython.com', data['data']['users'][1]['email'])
-
-    def test_main_no_users(self):
-        '''Ensure the main route behaves correctly when no users added to database'''
-        response = self.client.get('/')
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<h1>All Users</h1>', response.data)
-        self.assertIn(b'<p>No users!</p>', response.data)
-
-    def test_main_have_users(self):
-        '''Ensure the main route behaves correctly when users have added to database'''
-        add_user('michael', 'michael@realpython.com')
-        add_user('fletcher', 'fletcher@realpython.com')
-        response = self.client.get('/')
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<h1>All Users</h1>', response.data)
-        self.assertNotIn(b'<p>no users</p>', response.data)
-        self.assertIn(b'<strong>michael</strong>', response.data)
-        self.assertIn(b'<strong>fletcher</strong>', response.data)
-
-    def test_main_add_user(self):
-        with self.client:
-            response = self.client.post(
-                '/',
-                data=dict(username='michael', email='michael@realpython.com'),
-                follow_redirects=True
-            )
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'<h1>All Users</h1>', response.data)
-            self.assertNotIn(b'<p>no users</p>', response.data)
-            self.assertIn(b'<strong>michael</strong>', response.data)
+            self.assertIn('michael_foo@realpython.com', data['data']['users'][0]['email'])
+            self.assertIn('fletcher_foo@realpython.com', data['data']['users'][1]['email'])
