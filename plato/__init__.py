@@ -2,12 +2,15 @@ import os
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-
 from flask_cors import CORS
+from flask_migrate import Migrate
+from flask_bcrypt import Bcrypt
 
 
 # instantiate the db
 db = SQLAlchemy()
+migrate = Migrate()
+bcrypt = Bcrypt()
 
 
 def create_app():
@@ -23,6 +26,8 @@ def create_app():
 
     # setup extensions
     db.init_app(app)
+    bcrypt.init_app(app)
+    migrate.init_app(app, db)
 
     # register blueprints
     from plato.api.views import users_blueprint
