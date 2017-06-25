@@ -3,7 +3,7 @@ import datetime
 
 from flask import current_app
 
-from plato import db
+from plato import db, bcrypt
 
 
 class User(db.Model):
@@ -18,8 +18,15 @@ class User(db.Model):
     def __init__(self, username, email, password, created_at=datetime.datetime.now()):
         self.username = username
         self.email = email
-        self.password = password
+        self.password = bcrypt.generate_password_hash(
+            password, current_app.config.get('BCRYPT_LOG_ROUNDS')
+        ).decode()
         self.created_at = created_at
+
+    def __repr__(self):
+        return 'username: ' + self.username + \
+               '\n email: ' + self.email + \
+               '\n password: ' + self.password
 
     def encode_auth_token(self, user_id):
         """Generates the auth token"""
@@ -32,11 +39,12 @@ class User(db.Model):
                 'iat': datetime.datetime.utcnow(),
                 'sub': user_id
             }
-            return jwt.encode(
+            auth_token = jwt.encode(
                 payload,
                 current_app.config.get('SECRET_KEY'),
                 algorithm='HS256'
             )
+            return auth_token
         except Exception as e:
             return e
 
