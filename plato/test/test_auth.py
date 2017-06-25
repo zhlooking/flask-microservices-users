@@ -221,9 +221,6 @@ class TestAuthService(BaseTestCase):
                 )
             )
             data = json.loads(response.data.decode())
-            print('-------------------------------------')
-            print(data)
-            print('-------------------------------------')
             self.assertTrue(data['status'] == 'error')
             self.assertTrue(
                 data['message'] == 'Something went wrong. Please contact us.')

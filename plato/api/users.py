@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from plato import db
 from plato.api.models import User
-from plato.api.utils import authenticate
+from plato.api.utils import authenticate, is_admin
 
 
 users_blueprint = Blueprint('users', __name__, template_folder='./templates')
@@ -11,8 +11,14 @@ users_blueprint = Blueprint('users', __name__, template_folder='./templates')
 
 @users_blueprint.route('/users', methods=['POST'])
 @authenticate
-def add_user(_):
+def add_user(resp):
     '''Add user info'''
+    if is_admin(resp):
+        response_object = {
+            'status': 'error',
+            'message': 'You do not have permission to do that.'
+        }
+        return make_response(jsonify(response_object)), 403
     post_data = request.get_json()
     if not post_data:
         response_object = {
@@ -20,11 +26,9 @@ def add_user(_):
             'message': f'Invalid payload.'
         }
         return make_response(jsonify(response_object)), 400
-
     username = post_data.get('username')
     email = post_data.get('email')
     password = post_data.get('password')
-
     try:
         user = User.query.filter_by(email=email).first()
         if not user:
