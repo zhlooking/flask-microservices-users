@@ -3,6 +3,8 @@ import json
 
 from plato.test.utils import add_user
 from plato.test.base import BaseTestCase
+from plato.api.models import User
+from plato import db
 
 
 class TestAuthService(BaseTestCase):
@@ -198,6 +200,35 @@ class TestAuthService(BaseTestCase):
                 data['message'] == 'Signature expired. Please log in again.')
             self.assertEqual(response.status_code, 401)
 
+    def test_invalid_logout_inactive(self):
+        add_user('foo', 'foo@bar.com', 'test_pwd')
+        user = User.query.filter_by(email='foo@bar.com').first()
+        user.active = False
+        db.session.commit()
+        with self.client:
+            resp_login = self.client.post(
+                '/auth/login',
+                data=json.dumps(dict(
+                    email='foo@bar.com',
+                    password='test_pwd'
+                )),
+                content_type='application/json'
+            )
+            response = self.client.get(
+                '/auth/logout',
+                headers=dict(
+                    Authorization='Bearer ' + json.loads(resp_login.data.decode())['auth_token']
+                )
+            )
+            data = json.loads(response.data.decode())
+            print('-------------------------------------')
+            print(data)
+            print('-------------------------------------')
+            self.assertTrue(data['status'] == 'error')
+            self.assertTrue(
+                data['message'] == 'Something went wrong. Please contact us.')
+            self.assertEqual(response.status_code, 401)
+
     def test_invalid_logout(self):
         with self.client:
             response = self.client.get(
@@ -249,3 +280,56 @@ class TestAuthService(BaseTestCase):
             self.assertTrue(data['status'] == 'error')
             self.assertTrue(data['message'] == 'Invalid token. Please log in again.')
             self.assertTrue(response.status_code, 401)
+
+    def test_invalid_status_inactive(self):
+        # add_user('foo', 'foo@bar.com', 'test_pwd')
+        # user = User.query.filter_by(email='foo@bar.com').first()
+        # user.active = False
+        # db.session.commit()
+        # with self.client:
+        #     resp_login = self.client.post(
+        #         '/auth/login',
+        #         data=json.dumps(dict(
+        #             email='foo@bar.com',
+        #             password='test_pwd'
+        #         )),
+        #         content_type='application/json'
+        #     )
+        #     response = self.client.get(
+        #         '/auth/status',
+        #         headers=dict(
+        #             Authorization='Bearer ' + json.loads(resp_login.data.decode())['auth_token']
+        #         )
+        #     )
+        #     data = json.loads(response.data.decode())
+        #     self.assertTrue(data['status'] == 'error')
+        #     self.assertTrue(data['message'] == 'Something went wrong. Please contact us.')
+        #     self.assertTrue(response.status_code, 401)
+
+        add_user('test', 'test@test.com', 'test')
+        # update user
+        user = User.query.filter_by(email='test@test.com').first()
+        user.active = False
+        db.session.commit()
+        with self.client:
+            resp_login = self.client.post(
+                '/auth/login',
+                data=json.dumps(dict(
+                    email='test@test.com',
+                    password='test'
+                )),
+                content_type='application/json'
+            )
+            response = self.client.get(
+                '/auth/status',
+                headers=dict(
+                    Authorization='Bearer ' + json.loads(
+                        resp_login.data.decode()
+                    )['auth_token']
+                )
+            )
+            data = json.loads(response.data.decode())
+            self.assertTrue(data['status'] == 'error')
+            self.assertTrue(
+                data['message'] == 'Something went wrong. Please contact us.')
+            self.assertEqual(response.status_code, 401)

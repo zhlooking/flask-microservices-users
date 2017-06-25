@@ -3,13 +3,15 @@ from sqlalchemy import exc
 
 from plato import db
 from plato.api.models import User
+from plato.api.utils import authenticate
 
 
 users_blueprint = Blueprint('users', __name__, template_folder='./templates')
 
 
 @users_blueprint.route('/users', methods=['POST'])
-def add_user():
+@authenticate
+def add_user(_):
     '''Add user info'''
     post_data = request.get_json()
     if not post_data:
